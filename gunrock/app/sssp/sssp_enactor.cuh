@@ -20,6 +20,11 @@
 #include <gunrock/app/sssp/sssp_problem.cuh>
 #include <gunrock/oprtr/oprtr.cuh>
 
+#include <thrust/sort.h>
+#include <thrust/execution_policy.h>
+
+#include <chrono>
+
 namespace gunrock {
 namespace app {
 namespace sssp {
@@ -122,6 +127,16 @@ struct SSSPIterationLoop
 
     oprtr_parameters.label = iteration + 1;
     // Call the advance operator, using the advance operation
+
+    if(data_slice.sort_frontier)
+    {
+      // util::PrintMsg("Sorting the frontier");
+      thrust::sort(thrust::device, frontier.V_Q()->GetPointer(util::DEVICE), frontier.V_Q()->GetPointer(util::DEVICE) + frontier.queue_length);
+      // frontier.V_Q().Sort();
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+
     GUARD_CU(oprtr::Advance<oprtr::OprtrType_V2V>(
         graph.csr(), frontier.V_Q(), frontier.Next_V_Q(), oprtr_parameters,
         advance_op, filter_op));
@@ -134,6 +149,10 @@ struct SSSPIterationLoop
           graph.csr(), frontier.V_Q(), frontier.Next_V_Q(), oprtr_parameters,
           filter_op));
     }
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = (stop - start); 
+    util::PrintMsg("Advance Time: " + std::to_string(duration.count()));
 
     // Get back the resulted frontier length
     GUARD_CU(frontier.work_progress.GetQueueLength(

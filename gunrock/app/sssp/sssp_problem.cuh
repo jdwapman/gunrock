@@ -33,6 +33,10 @@ cudaError_t UseParameters_problem(util::Parameters &parameters) {
       "mark-pred",
       util::OPTIONAL_ARGUMENT | util::MULTI_VALUE | util::OPTIONAL_PARAMETER,
       false, "Whether to mark predecessor info.", __FILE__, __LINE__));
+  GUARD_CU(parameters.Use<bool>(
+      "sort-frontier",
+      util::OPTIONAL_ARGUMENT | util::MULTI_VALUE | util::OPTIONAL_PARAMETER,
+      false, "Whether to sort the frontier before Advance.", __FILE__, __LINE__));
 
   return retval;
 }
@@ -72,7 +76,7 @@ struct Problem : ProblemBase<_GraphT, _FLAG> {
         labels;  // labels to mark latest iteration the vertex been visited
     util::Array1D<SizeT, VertexT> preds;       // predecessors of vertices
     util::Array1D<SizeT, VertexT> temp_preds;  // predecessors of vertices
-
+    bool sort_frontier = false;
     /*
      * @brief Default constructor
      */
@@ -328,8 +332,10 @@ struct Problem : ProblemBase<_GraphT, _FLAG> {
       auto &data_slice = data_slices[gpu][0];
       GUARD_CU(data_slice.Init(this->sub_graphs[gpu], this->num_gpus,
                                this->gpu_idx[gpu], target, this->flag));
-    }  // end for (gpu)
 
+      data_slice.sort_frontier = this->parameters.template Get<SizeT>("sort-frontier");
+    }  // end for (gpu)
+    
     return retval;
   }
 
