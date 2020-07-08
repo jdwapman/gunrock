@@ -5,26 +5,28 @@
 #!/bin/bash
 
 EXEDIR=${1:-"../../../build/bin"}
-DATADIR=${2:-"/data/gunrock_dataset/large"}
-DEVICE=${3:-"0"}
+DATADIR=${2:-"/nfs/mario-2TB/gunrock_dataset/large"}
+DEVICE=${3:-"3"}
 TAG=${4:-""}
 
 APPLICATION="sssp"
 EXECUTION="$EXEDIR/$APPLICATION"
 
 ORG_OPTIONS=""
-ORG_OPTIONS="$ORG_OPTIONS --num-runs=10"
+ORG_OPTIONS="$ORG_OPTIONS --num-runs=3"
 # ORG_OPTIONS="$ORG_OPTIONS --validation=each"
 ORG_OPTIONS="$ORG_OPTIONS --quick"
 ORG_OPTIONS="$ORG_OPTIONS --device=$DEVICE"
-ORG_OPTIONS="$ORG_OPTIONS --src=random"
+# ORG_OPTIONS="$ORG_OPTIONS --src=$RANDOM"
 ORG_OPTIONS="$ORG_OPTIONS --64bit-SizeT=false,true"
 ORG_OPTIONS="$ORG_OPTIONS --64bit-VertexT=false,true"
 ORG_OPTIONS="$ORG_OPTIONS --mark-pred=false,true"
 ORG_OPTIONS="$ORG_OPTIONS --advance-mode=LB_CULL,LB,TWC"
 ORG_OPTIONS="$ORG_OPTIONS --tag=$TAG"
+# ORG_OPTIONS="$ORG_OPTIONS --sort-frontier=1"
 
-EVAL_DIR="SSSP"
+EVAL_DIR_SORT="SSSP_SORT"
+EVAL_DIR_NOSORT="SSSP_NOSORT"
 
 NAME[0]="ak2010"            
 
@@ -91,7 +93,8 @@ NAME[71]="road_central"
 #NAME[41]="tweets"           
 #NAME[42]="bitcoin"          
 
-mkdir -p $EVAL_DIR
+mkdir -p $EVAL_DIR_SORT
+mkdir -p $EVAL_DIR_NOSORT
 
 for i in {0..71}; do
     if [ "${NAME[$i]}" = "" ]; then
@@ -99,7 +102,10 @@ for i in {0..71}; do
     fi
 
     SUFFIX=${NAME[$i]}
-    mkdir -p $EVAL_DIR/$SUFFIX
+    mkdir -p $EVAL_DIR_SORT/$SUFFIX
+    mkdir -p $EVAL_DIR_NOSORT/$SUFFIX
+
+    SRC=0
 
     for undirected in "true" "false"; do
         OPTIONS=$ORG_OPTIONS
@@ -118,8 +124,18 @@ for i in {0..71}; do
             MARKS="DIR"
         fi
 
-        echo $EXECUTION $GRAPH_ $OPTIONS_ --jsondir=./$EVAL_DIR/$SUFFIX "> ./$EVAL_DIR/$SUFFIX/${NAME[$i]}.${MARKS}.txt"
-             $EXECUTION $GRAPH_ $OPTIONS_ --jsondir=./$EVAL_DIR/$SUFFIX > ./$EVAL_DIR/$SUFFIX/${NAME[$i]}.${MARKS}.txt
+        # Randomly generate a src vertex
+        
+
+        # Sort the frontier
+        echo $EXECUTION $GRAPH_ $OPTIONS_ --sort-frontier=1 --src=$SRC --jsondir=./$EVAL_DIR_SORT/$SUFFIX "> ./$EVAL_DIR_SORT/$SUFFIX/${NAME[$i]}.${MARKS}.txt"
+            $EXECUTION $GRAPH_ $OPTIONS_ --sort-frontier=1 --src=$SRC --jsondir=./$EVAL_DIR_SORT/$SUFFIX > ./$EVAL_DIR_SORT/$SUFFIX/${NAME[$i]}.${MARKS}.txt
         sleep 1
+
+        # Don't sort the frontier
+        echo $EXECUTION $GRAPH_ $OPTIONS_ --sort-frontier=0 --src=$SRC --jsondir=./$EVAL_DIR_NOSORT/$SUFFIX "> ./$EVAL_DIR_NOSORT/$SUFFIX/${NAME[$i]}.${MARKS}.txt"
+            $EXECUTION $GRAPH_ $OPTIONS_ --sort-frontier=0 --src=$SRC --jsondir=./$EVAL_DIR_NOSORT/$SUFFIX > ./$EVAL_DIR_NOSORT/$SUFFIX/${NAME[$i]}.${MARKS}.txt
+        sleep 1
+
     done
 done
