@@ -132,7 +132,7 @@ struct SSSPIterationLoop
     {
       // util::PrintMsg("Sorting the frontier");
       thrust::sort(thrust::device, frontier.V_Q()->GetPointer(util::DEVICE), frontier.V_Q()->GetPointer(util::DEVICE) + frontier.queue_length);
-      // frontier.V_Q().Sort();
+      // frontier.V_Q()->Print("", frontier.queue_length); // Verify sorting
     }
 
     auto start = std::chrono::high_resolution_clock::now();
