@@ -22,6 +22,9 @@
 # Ignore tarball
 *.tar.gz
 
+# Ignore zip
+*.zip
+
 # Ignore bin directory
 bin/
 
