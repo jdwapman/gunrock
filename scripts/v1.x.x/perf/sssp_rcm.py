@@ -28,6 +28,7 @@ OPTIONS+=" --mark-pred=false,true"
 OPTIONS+=" --advance-mode=LB_CULL,LB,TWC"
 OPTIONS+=" --remove-self-loops=false"
 OPTIONS+=" --remove-duplicate-edges=false"
+OPTIONS+=" --read-from-binary=false"
 
 NORCM_EVAL_DIR = "NORCM_SSSP"
 RCM_EVAL_DIR = "RCM_SSSP"
@@ -113,7 +114,7 @@ for idx in range(0, len(NAME)):
     subprocess.Popen(["mkdir -p " + RCM_EVAL_DIR + "/" + SUFFIX], shell=True)
 
     # undirected = true only! TODO: Check if this is valid
-    for undirected in [False]:
+    for undirected in [True, False]:
         if GRAPH[idx] == "":
             NORCM_GRAPH_="market " + NORCM_DATADIR + "/" + NAME[idx] + "/" + NAME[idx] + ".mtx"
             RCM_GRAPH_="market " + RCM_DATADIR + "/" + NAME[idx] + "/" + NAME[idx] + ".mtx"
@@ -124,10 +125,10 @@ for idx in range(0, len(NAME)):
         MARKS="UDIR"
         OPTIONS_=OPTIONS
         if undirected:
-            OPTIONS_ = OPTIONS + "--undirected=true"
+            OPTIONS_ = OPTIONS + " --undirected=true"
             MARKS="UDIR"
         else:
-            OPTIONS_ = OPTIONS + "-undirected=false"
+            OPTIONS_ = OPTIONS + " --undirected=false"
             MARKS="DIR"
 
         # Read the perm file and select the same 10 random vertices
@@ -148,13 +149,9 @@ for idx in range(0, len(NAME)):
         for src_cnt in range(0, num_runs):
             srcs.append(lines[rcm_srcs[src_cnt]])
 
-        # In the RCM python script, mmread automatically performs edge doubling if the matrix is symmetrical, and mmread does not make any assumptions on symmetry. For this reason, RCM gunrock should not attempt to do edge doubling.
-
-        # For normal graphs, gunrock needs to perform edge doubling if symmetry is present
-
         NORCM_OPTIONS = ""
         NORCM_OPTIONS += " --tag=" + NORCM_TAG
-        NORCM_OPTIONS += " --undirected=true"
+        # NORCM_OPTIONS += " --undirected=true"
         NORCM_OPTIONS += " --src=" + ','.join([str(i) for i in srcs])
         NORCM_OPTIONS += " --jsondir=" + "./" + NORCM_EVAL_DIR + "/" + SUFFIX
 
@@ -162,7 +159,7 @@ for idx in range(0, len(NAME)):
 
         RCM_OPTIONS = ""
         RCM_OPTIONS += " --tag=" + RCM_TAG
-        RCM_OPTIONS += " --undirected=false"
+        # RCM_OPTIONS += " --undirected=false"
         RCM_OPTIONS += " --src=" + ','.join([str(i) for i in rcm_srcs])
         RCM_OPTIONS += " --jsondir=" + "./" + RCM_EVAL_DIR + "/" + SUFFIX
 
