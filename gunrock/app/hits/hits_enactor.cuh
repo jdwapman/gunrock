@@ -101,6 +101,8 @@ struct hitsIterationLoop
     auto max_iter = data_slice.max_iter;
     auto hits_norm = data_slice.hits_norm;
 
+    auto use_atomics = data_slice.use_atomics;
+
     // Normalize the HITS scores every N iterations.
     // Provides speedup at the risk of data overflow
     auto normalize_n = data_slice.normalize_n;
@@ -118,14 +120,19 @@ struct hitsIterationLoop
 
     // Advance operation to update all hub and auth scores
     auto advance_op =
-        [hrank_curr, arank_curr, hrank_next, arank_next] __host__ __device__(
+        [hrank_curr, arank_curr, hrank_next, arank_next, use_atomics] __host__ __device__(
             const VertexT &src, VertexT &dest, const SizeT &edge_id,
             const VertexT &input_item, const SizeT &input_pos,
             SizeT &output_pos) -> bool {
       // Update the hub and authority scores.
       // TODO: Look into NeighborReduce for speed improvements
-      atomicAdd(&hrank_next[src], arank_curr[dest]);
-      atomicAdd(&arank_next[dest], hrank_curr[src]);
+      if(use_atomics) {
+        atomicAdd(&hrank_next[src], arank_curr[dest]);
+        atomicAdd(&arank_next[dest], hrank_curr[src]);
+      } else {
+        hrank_next[src] += arank_curr[dest];
+        arank_next[dest] += hrank_curr[src];
+      }
 
       return true;
     };

@@ -57,6 +57,12 @@ cudaError_t UseParameters_problem(util::Parameters &parameters) {
       1e-6, "Tolerance for HITS algorithm convergence.", __FILE__,
       __LINE__));
 
+  GUARD_CU(parameters.Use<bool>(
+      "use-atomics",
+      util::REQUIRED_ARGUMENT | util::MULTI_VALUE | util::OPTIONAL_PARAMETER,
+      true, "Use atomics for HITS.", __FILE__,
+      __LINE__));
+
   return retval;
 }
 
@@ -102,10 +108,12 @@ struct Problem : ProblemBase<_GraphT, _FLAG> {
     SizeT hits_norm;    // Normalization method
     ValueT hits_tol;    // Termination tolerance
     SizeT normalize_n;  // Normalize every N iterations
+
+    bool use_atomics;
     /*
      * @brief Default constructor
      */
-    DataSlice() : BaseDataSlice(), max_iter(0), hits_norm(HITS_NORMALIZATION_METHOD_1), hits_tol(1e-6), normalize_n(0) {
+    DataSlice() : BaseDataSlice(), max_iter(0), hits_norm(HITS_NORMALIZATION_METHOD_1), hits_tol(1e-6), normalize_n(0), use_atomics(true) {
       // Name of the problem specific arrays:
       hrank_curr.SetName("hrank_curr");
       arank_curr.SetName("arank_curr");
@@ -348,6 +356,8 @@ struct Problem : ProblemBase<_GraphT, _FLAG> {
       data_slice.max_iter = this->parameters.template Get<SizeT>("hits-max-iter");
       data_slice.hits_norm = this->parameters.template Get<SizeT>("hits-norm");
       data_slice.hits_tol = this->parameters.template Get<ValueT>("hits-term-tol");
+
+      data_slice.use_atomics = this->parameters.template Get<bool>("use-atomics"); 
 
       data_slice.normalize_n =
           this->parameters.template Get<SizeT>("hits-normalize-n");

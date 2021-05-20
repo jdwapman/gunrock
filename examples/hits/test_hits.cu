@@ -49,6 +49,7 @@ struct main_struct {
     int max_iter = parameters.Get<SizeT>("hits-max-iter");
     double tol = parameters.Get<double>("hits-term-tol");
     int hits_norm = parameters.Get<SizeT>("hits-norm");
+    bool use_atomics = parameters.Get<bool>("use-atomics");
 
     // Convert from a command-line int to the enum
     if (hits_norm == 1) {
