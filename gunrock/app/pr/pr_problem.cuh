@@ -63,6 +63,11 @@ cudaError_t UseParameters_problem(util::Parameters &parameters) {
       util::REQUIRED_ARGUMENT | util::MULTI_VALUE | util::OPTIONAL_PARAMETER,
       50, "Maximum number of PageRank iterations.", __FILE__, __LINE__));
 
+  GUARD_CU(parameters.Use<int64_t>(
+      "use-atomics",
+      util::REQUIRED_ARGUMENT | util::MULTI_VALUE | util::OPTIONAL_PARAMETER,
+      true, "Use atomics for PR.", __FILE__, __LINE__));
+
   return retval;
 }
 
@@ -121,6 +126,7 @@ struct Problem : ProblemBase<_GraphT, _FLAG> {
     bool to_continue;
     SizeT num_updated_vertices;
     bool final_event_set;
+    bool use_atomics;
 
     DataSlice *data_slices;
 
@@ -148,6 +154,7 @@ struct Problem : ProblemBase<_GraphT, _FLAG> {
           max_iter(0),
           num_updated_vertices(0),
           final_event_set(false),
+          use_atomics(true),
           remote_vertices_in(NULL),
           remote_vertices_out(NULL) {
       rank_curr.SetName("rank_curr");
@@ -502,6 +509,7 @@ struct Problem : ProblemBase<_GraphT, _FLAG> {
       data_slice.threshold = this->parameters.template Get<ValueT>("threshold");
       data_slice.delta = this->parameters.template Get<ValueT>("delta");
       data_slice.max_iter = this->parameters.template Get<SizeT>("max-iter");
+      data_slice.use_atomics = this->parameters.template Get<bool>("use-atomics");
 
       GUARD_CU(data_slice.Init(this->sub_graphs[gpu], graph.nodes,
                                this->num_gpus, this->gpu_idx[gpu], target,

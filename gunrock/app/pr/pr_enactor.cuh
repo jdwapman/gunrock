@@ -86,6 +86,7 @@ struct PRIterationLoop : public IterationLoopBase<EnactorT, Use_FullQ | Push> {
     auto &retval = enactor_stats.retval;
     auto &iteration = enactor_stats.iteration;
     auto null_ptr = &local_vertices;
+    bool use_atomics = data_slice.use_atomics;
     null_ptr = NULL;
 
     if (iteration != 0) {
@@ -171,14 +172,21 @@ struct PRIterationLoop : public IterationLoopBase<EnactorT, Use_FullQ | Push> {
       if (enactor.flag & Debug)
         util::cpu_mt::PrintMessage("Advance start.", gpu_num, iteration, peer_);
 
-      auto advance_op = [rank_curr, rank_next] __host__ __device__(
+      auto advance_op = [rank_curr, rank_next, use_atomics] __host__ __device__(
                             const VertexT &src, VertexT &dest,
                             const SizeT &edge_id, const VertexT &input_item,
                             const SizeT &input_pos, SizeT &output_pos) -> bool {
         // printf("%d -> %d\n", src, dest);
         ValueT add_value = rank_curr[src];
         if (isfinite(add_value)) {
-          atomicAdd(rank_next + dest, add_value);
+          if(use_atomics) {
+            // printf("Atomic\n");
+            atomicAdd(rank_next + dest, add_value);
+          }
+          else {
+            // printf("No Atomic\n");
+            rank_next[dest] += add_value;
+          }
           // ValueT old_val = atomicAdd(rank_next + dest, add_value);
           // if (dest == 42029)
           //    printf("rank[%d] = %f = %f (rank[%d]) + %f\n",
